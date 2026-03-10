@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="AI-powered employee performance prediction using machine learning. Enter your data and get instant predictions." />
+  <title>AI Performance Predictor</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- ── Toast Container ──────────────────────────────────────────────────── -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="logo">
+        <i data-lucide="bot" class="logo-icon"></i>
+        <div>
+          <h1>AI Performance Predictor</h1>
+          <p class="logo-sub">Machine Learning powered insights</p>
+        </div>
+      </div>
+      <button id="theme-toggle" class="btn-icon" title="Toggle dark/light mode" aria-label="Toggle theme">
+        <i data-lucide="sun" id="theme-icon"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Main Layout ─────────────────────────────────────────────────────── -->
+  <main class="container">
+
+    <!-- ── Left Column: Form ───────────────────────────────────────────── -->
+    <section class="card form-card" aria-label="Prediction Form">
+      <div class="card-header">
+        <h2>Employee Data</h2>
+        <span class="badge" id="model-accuracy-badge" title="Model accuracy on test data">Model: –</span>
+      </div>
+
+      <form id="prediction-form" novalidate>
+
+        <!-- Age -->
+        <div class="form-group">
+          <label for="age">
+            Age
+            <span class="tooltip-btn" data-tip="Candidate age in years (1–100)"><i data-lucide="help-circle"></i></span>
+          </label>
+          <input type="number" id="age" name="age" placeholder="e.g. 28" min="1" max="100" autocomplete="off"
+            aria-required="true" />
+          <span class="field-error" id="age-error"></span>
+        </div>
+
+        <!-- Experience -->
+        <div class="form-group">
+          <label for="experience">
+            Years of Experience
+            <span class="tooltip-btn" data-tip="Total years of professional work experience (0–60)"><i
+                data-lucide="help-circle"></i></span>
+          </label>
+          <input type="number" id="experience" name="experience" placeholder="e.g. 5" min="0" max="60"
+            autocomplete="off" aria-required="true" />
+          <span class="field-error" id="experience-error"></span>
+        </div>
+
+        <!-- Skill Score -->
+        <div class="form-group">
+          <label for="skillScore">
+            Skill Score
+            <span class="tooltip-btn" data-tip="Technical skill rating from 0 to 100"><i
+                data-lucide="help-circle"></i></span>
+          </label>
+          <input type="number" id="skillScore" name="skillScore" placeholder="e.g. 75" min="0" max="100"
+            autocomplete="off" aria-required="true" />
+          <div class="skill-track">
+            <div class="skill-fill" id="skill-fill"></div>
+          </div>
+          <span class="field-error" id="skillScore-error"></span>
+        </div>
+
+        <!-- Education Level -->
+        <div class="form-group">
+          <label for="educationLevel">
+            Education Level
+            <span class="tooltip-btn" data-tip="Highest completed academic qualification"><i
+                data-lucide="help-circle"></i></span>
+          </label>
+          <select id="educationLevel" name="educationLevel" aria-required="true">
+            <option value="">— Select education —</option>
+            <option value="High School">High School</option>
+            <option value="Bachelor">Bachelor's Degree</option>
+            <option value="Master">Master's Degree</option>
+            <option value="PhD">PhD</option>
+          </select>
+          <span class="field-error" id="educationLevel-error"></span>
+        </div>
+
+        <!-- Actions -->
+        <div class="form-actions">
+          <button type="submit" id="predict-btn" class="btn-primary">
+            <span class="btn-text">Predict Performance</span>
+            <span class="spinner" id="btn-spinner" aria-hidden="true"></span>
+          </button>
+          <button type="button" id="reset-btn" class="btn-secondary">Reset</button>
+        </div>
+
+      </form>
+    </section>
+
+    <!-- ── Right Column: Results ────────────────────────────────────────── -->
+    <section class="right-col">
+
+      <!-- Result Card -->
+      <div class="card result-card" id="result-card" aria-live="polite" hidden>
+        <div class="result-header">
+          <div class="result-icon" id="result-icon"><i data-lucide="medal"></i></div>
+          <div>
+            <p class="result-label">Prediction Result</p>
+            <h2 class="result-value" id="result-value">–</h2>
+          </div>
+          <div class="confidence-ring">
+            <svg viewBox="0 0 80 80" class="ring-svg">
+              <circle class="ring-bg" cx="40" cy="40" r="34" />
+              <circle class="ring-fill" id="ring-fill" cx="40" cy="40" r="34" stroke-dasharray="213.63"
+                stroke-dashoffset="213.63" />
+            </svg>
+            <span class="ring-text" id="confidence-text">0%</span>
+          </div>
+        </div>
+
+        <p class="result-explanation" id="result-explanation">–</p>
+        <p class="result-meta">
+          <span>Model: <strong id="result-model">–</strong></span>
+          <span>Accuracy: <strong id="result-accuracy">–</strong></span>
+        </p>
+      </div>
+
+      <!-- Chart Card -->
+      <div class="card chart-card" id="chart-card" hidden>
+        <h3>Confidence Distribution</h3>
+        <canvas id="confidence-chart" height="100" aria-label="Confidence bar chart"></canvas>
+      </div>
+
+      <!-- Placeholder when no prediction yet -->
+      <div class="empty-state" id="empty-state">
+        <i data-lucide="bar-chart-2" class="empty-icon"></i>
+        <p>Fill in the form and click<br /><strong>Predict Performance</strong> to see results.</p>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- ── History Section ─────────────────────────────────────────────────── -->
+  <section class="container history-section" aria-label="Prediction History">
+    <div class="history-header">
+      <h2>Prediction History</h2>
+      <div class="history-actions">
+        <button id="download-csv-btn" class="btn-secondary btn-sm" disabled><i data-lucide="download"
+            style="width: 14px; height: 14px; margin-right: 4px;"></i> Download CSV</button>
+        <button id="clear-history-btn" class="btn-danger btn-sm" disabled><i data-lucide="trash-2"
+            style="width: 14px; height: 14px; margin-right: 4px;"></i> Clear</button>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table id="history-table" aria-label="Prediction history table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Time</th>
+            <th>Age</th>
+            <th>Exp</th>
+            <th>Skill</th>
+            <th>Education</th>
+            <th>Prediction</th>
+            <th>Confidence</th>
+          </tr>
+        </thead>
+        <tbody id="history-body">
+          <tr class="empty-row">
+            <td colspan="8">No predictions yet. Make your first prediction above!</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Footer ─────────────────────────────────────────────────────────── -->
+  <footer class="app-footer">
+    <p>AI Performance Predictor &mdash; Logistic Regression Model &mdash; Built for academic use</p>
+  </footer>
+
+  <!-- Tooltip overlay (shared) -->
+  <div id="tooltip-popup" class="tooltip-popup" role="tooltip" aria-hidden="true"></div>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="script.js"></script>
+</body>
+
+</html>
